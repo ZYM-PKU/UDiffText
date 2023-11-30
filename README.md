@@ -13,6 +13,7 @@
 **2023.11.30** Upload version 1.0
 
 ### 🔨 Installation
+
 1. Clone this repo: 
 ```
 git clone https://github.com/ZYM-PKU/UDiffText.git
@@ -27,18 +28,45 @@ conda activate udiff
 pip install -r requirements.txt
 ```
 
-### 💻 Training
-1. Make checkpoint directory
-'''
+3. Make the checkpoint directory and build the tree structure
+
+```
 mkdir ./checkpoints
-'''
+
+checkpoints
+├── AEs                    // AutoEncoder
+├── encoders             
+    ├── LabelEncoder       // Character-level encoder
+    └── ViTSTR             // STR encoder
+├── predictors             // STR model
+├── pretrained             // Pretrained SD
+└── ***.ckpt               // UDiffText checkpoint
+```
+
+### 💻 Training
+
+1. Make the checkpoint directory and build the tree structure
+
+```
+mkdir ./checkpoints
+
+checkpoints
+├── AEs                    // AutoEncoder
+├── encoders             
+    ├── LabelEncoder       // Character-level encoder
+    └── ViTSTR             // STR encoder
+├── predictors             // STR model
+├── pretrained             // Pretrained SD
+└── ***.ckpt               // UDiffText checkpoint
+```
+
 2. Set training parameters in configs/train.yaml, especially the paths:
-'''
-load_ckpt_path: ./checkpoints/st-epoch=15-step=100000.ckpt # sd_xl_base_1.0.safetensors  512-inpainting-ema.ckpt
-save_ckpt_dir: ./checkpoints
-model_cfg_path: ./configs/train/textdesign_sd_2.yaml
-dataset_cfg_path: ./configs/dataset/locr.yaml
-''' 
+
+```
+load_ckpt_path: ./checkpoints/pretrained/512-inpainting-ema.ckpt // Pretrained SD
+model_cfg_path: ./configs/train/textdesign_sd_2.yaml // Model configuration
+dataset_cfg_path: ./configs/dataset/locr.yaml // Use Laion-OCR dataset
+```
 
 ### 📏 Evaluation
 
