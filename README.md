@@ -28,6 +28,17 @@ pip install -r requirements.txt
 ```
 
 ### 💻 Training
+1. Make checkpoint directory
+'''
+mkdir ./checkpoints
+'''
+2. Set training parameters in configs/train.yaml, especially the paths:
+'''
+load_ckpt_path: ./checkpoints/st-epoch=15-step=100000.ckpt # sd_xl_base_1.0.safetensors  512-inpainting-ema.ckpt
+save_ckpt_dir: ./checkpoints
+model_cfg_path: ./configs/train/textdesign_sd_2.yaml
+dataset_cfg_path: ./configs/dataset/locr.yaml
+''' 
 
 ### 📏 Evaluation
 
