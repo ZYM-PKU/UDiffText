@@ -6,10 +6,9 @@ dataset:
   params:
     size: 224
     length: 100000
-    data_root: '/data/zhaoym/TextDesign-XL'
+    font_path: './dataset/utils/arial.ttf'
     min_len: 1
     max_len: 12
-
 
 model:
   target: sgm.modules.encoders.modules.LabelEncoder

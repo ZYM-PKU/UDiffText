@@ -1,14 +1,13 @@
 import os,glob
 import torch
-import torch.utils.data as data
-import numpy as np
 import cv2
 import scipy
 import string
 import json
-import sys
 import torchvision.transforms as transforms
 import torch.nn.functional as F
+import torch.utils.data as data
+import numpy as np
 
 from tqdm import tqdm
 from omegaconf import OmegaConf
@@ -16,16 +15,10 @@ from PIL import Image, ImageDraw, ImageFont
 from os.path import join as ospj
 from torchvision.utils import save_image
 from random import choice, randint, sample, uniform, shuffle
-from dataset.utils.colorscale import ColorScale
-from sgm.util import instantiate_from_config
 from util import *
 
-import sys
-sys.path.append(os.path.join(os.getcwd(), "src", "DeepSolo"))
-sys.path.append(os.path.join(os.getcwd(), "src", "DeepSolo", "demo"))
-from src.DeepSolo.demo.demo import prepare_detector, detect
 
-def region_draw_text(H, W, r_bbox, text, font_path = "./Baselines/textdiffuser/arial.ttf"):
+def region_draw_text(H, W, r_bbox, text, font_path = "./dataset/utils/arial.ttf"):
 
     m_top, m_bottom, m_left, m_right = r_bbox
     m_h, m_w = m_bottom-m_top, m_right-m_left
@@ -49,9 +42,10 @@ def region_draw_text(H, W, r_bbox, text, font_path = "./Baselines/textdiffuser/a
 
     return result
 
+
 def initialize_word_dict():
 
-        with open('./configs/dataset/words.txt', 'r') as f:
+        with open('./dataset/utils/words.txt', 'r') as f:
             word_list = f.readlines()
         
         words = []
@@ -64,182 +58,11 @@ def initialize_word_dict():
             word_dict[len(word)].append(word)
 
         return word_dict
-
-class T2IDataset(data.Dataset):
-
-    def __init__(self, cfgs, datype) -> None:
-        super().__init__()
-
-        # basic
-        self.type = datype
-        self.length = cfgs.length
-
-        # path
-        self.data_root = ospj(cfgs.data_root, "T2I")
-
-        # constraint
-        self.H = cfgs.H
-        self.W = cfgs.W
-    
-    def __len__(self):
-        
-        return self.length
-        
-    def __getitem__(self, index):
-
-        prompt = "a poster of cyberpunk night city, artistic, anime style, 4k"
-        negative_prompt = "image with text"
-
-        original_size_as_tuple = torch.tensor((self.H, self.W))
-        crop_coords_top_left = torch.tensor((0, 0))
-        target_size_as_tuple = torch.tensor((self.H, self.W))
-
-        batch = {
-            "txt": prompt,
-            "ntxt": negative_prompt,
-            "original_size_as_tuple": original_size_as_tuple,
-            "crop_coords_top_left": crop_coords_top_left, 
-            "target_size_as_tuple": target_size_as_tuple,
-            "name": str(index)
-        }
-
-        return batch
-
-
-class PreGenDataset(data.Dataset):
-
-    def __init__(self, cfgs, datype) -> None:
-        super().__init__()
-
-        # basic
-        self.type = datype
-        self.cfgs = cfgs
-        self.word_len = cfgs.word_len
-        with open(cfgs.prompt_path, "r") as fp:
-            self.prompts = fp.readlines()
-        self.creativebench = cfgs.creativebench
-
-        # path
-        self.image_root = cfgs.data_root
-
-        # constraint
-        self.org_h = cfgs.org_h
-        self.org_w = cfgs.org_w
-        self.H = cfgs.H
-        self.W = cfgs.W
-        self.seq_len = cfgs.seq_len
-
-        self.length = len(self.prompts)
-        self.count = -1
-
-        self.model = init_model(cfgs)
-        self.sampler = init_sampling(cfgs)
-        self.detector = prepare_detector()
-
-        self.character = string.printable[:-6]
-        self.word_dict = initialize_word_dict()
-    
-    def __len__(self):
-        
-        return self.length
-
-    def presample(self, prompt, negative_prompt=""):
-
-        batch = {
-            "txt": [prompt],
-            "ntxt": [negative_prompt],
-            "original_size_as_tuple": torch.tensor((self.org_h, self.org_w))[None],
-            "crop_coords_top_left": torch.tensor((0, 0))[None], 
-            "target_size_as_tuple": torch.tensor((self.org_h, self.org_w))[None],
-            "name": ["pregen"]
-        }
-        
-        with torch.no_grad():
-            
-            batch, batch_uc, _ = prepare_batch(self.cfgs, batch)
-
-            c, uc_1 = self.model.conditioner.get_unconditional_conditioning(
-                batch,
-                batch_uc=batch_uc,
-                force_uc_zero_embeddings=self.cfgs.force_uc_zero_embeddings,
-            )
-
-            x = self.sampler.get_init_noise(self.cfgs, self.model, cond=c, batch=batch, uc=uc_1)
-            
-            samples_z = self.sampler(self.model, x, cond=c, batch=batch, uc=uc_1, init_step=0)
-
-            samples_x = self.model.decode_first_stage(samples_z)
-            samples = torch.clamp((samples_x + 1.0) / 2.0, min=0.0, max=1.0)
-
-            return samples, samples_z
-        
-    def __getitem__(self, index):
-
-        self.count += 1
-
-        text = choice(self.word_dict[randint(self.word_len[0], self.word_len[1])])
-
-        if self.creativebench:
-            prompt = self.prompts[index]
-            prompt = prompt.replace("\"\"", "\""+text+"\"")[:-1]
-        else:
-            prompt = f"A sign that says a word\"{text}\""
-
-        while True:
-
-            image_path = ospj(self.image_root, f"{self.count}_bg.png")
-            image, _ = self.presample(prompt)
-            image = F.interpolate(image, (self.H, self.W))
-            image = image[0].cpu()
-            img = image.numpy().transpose(1,2,0) * 255
-            img = Image.fromarray(img.astype(np.uint8))
-            img.save(image_path)
-
-            results = detect(self.detector, image_path)
-            if results is None: continue
-            b_pts = results[0][0]
-
-            m_top, m_bottom = int(np.min(b_pts[:,1])), int(np.max(b_pts[:,1]))
-            m_left, m_right = int(np.min(b_pts[:,0])), int(np.max(b_pts[:,0]))
-            r_bbox = torch.tensor((m_top, m_bottom, m_left, m_right))
-
-            image = image * 2.0 - 1.0
-
-            mask = np.ones((self.H, self.W))
-            mask = cv2.fillConvexPoly(mask, b_pts, (0,0,0))
-
-            mask = torch.from_numpy(mask[None]).to(dtype=torch.float32)
-            masked = image * mask
-            mask = 1 - mask
-
-            seg_mask = torch.cat((torch.ones(len(text)), torch.zeros(self.seq_len-len(text))))
-
-            # additional cond
-            txt = ""
-            original_size_as_tuple = torch.tensor((self.H, self.W))
-            crop_coords_top_left = torch.tensor((0, 0))
-            target_size_as_tuple = torch.tensor((self.H, self.W))
-
-            batch = {
-                "image": image,
-                "mask": mask,
-                "masked": masked,
-                "seg_mask": seg_mask,
-                "r_bbox": r_bbox,
-                "label": text,
-                "txt": txt,
-                "original_size_as_tuple": original_size_as_tuple,
-                "crop_coords_top_left": crop_coords_top_left,
-                "target_size_as_tuple": target_size_as_tuple,
-                "name": str(self.count)
-            }
-
-            return batch
         
 
 class LabelDataset(data.Dataset):
 
-    def __init__(self, size, length, data_root, min_len, max_len) -> None:
+    def __init__(self, size, length, font_path, min_len, max_len) -> None:
         super().__init__()
 
         # constraint
@@ -247,10 +70,7 @@ class LabelDataset(data.Dataset):
         self.size = size
 
         # path
-        self.data_root = ospj(data_root, "Truetype")
-        self.font_root = ospj(data_root, "Truetype", "ufl")
-        self.font_paths = sorted(glob.glob(ospj(self.font_root, "*", "*.ttf")))
-        self.ref_font_path = ospj(data_root, "Truetype", "ufl", "ubuntu", "Ubuntu-Bold.ttf")
+        self.font_path = font_path
 
         # word dict
         self.character = string.printable[:-6]
@@ -270,8 +90,7 @@ class LabelDataset(data.Dataset):
 
             text_len = randint(self.min_len, self.max_len)
             text = "".join([choice(self.character) for i in range(text_len)])
-            text = "pandas"
-            font_path = choice(self.font_paths)
+            font_path = self.font_path
 
             try: 
                 font = ImageFont.truetype(font_path, 128)
@@ -300,445 +119,6 @@ class LabelDataset(data.Dataset):
 
             return batch
     
-
-class TruetypeDataset(data.Dataset):
-
-    def __init__(self, cfgs, datype) -> None:
-        super().__init__()
-
-        # basic
-        self.type = datype
-        self.length = cfgs.length
-
-        # path
-        self.data_root = ospj(cfgs.data_root, "Truetype")
-        self.font_root = ospj(cfgs.data_root, "Truetype", "ofl")
-        self.font_paths = sorted(glob.glob(ospj(self.font_root, "*", "*.ttf")))
-        self.ref_font_path = ospj(cfgs.data_root, "Truetype", "ufl", "ubuntu", "Ubuntu-Bold.ttf")
-
-        # constraint
-        self.H = cfgs.H
-        self.W = cfgs.W
-        self.char_w = cfgs.char_w
-        self.char_h_ratio = cfgs.char_h_ratio
-        self.word_len = cfgs.word_len
-        self.amp_factor = cfgs.amp_factor
-        self.colorscale = ColorScale()
-        self.multi_color = cfgs.multi_color
-        self.pre_render = cfgs.pre_render
-
-        # word dict
-        self.character = string.printable[:-6]
-        self.word_dict = initialize_word_dict()
-        
-    def __len__(self):
-        
-        return self.length
-        
-    def __getitem__(self, index):
-
-        while True:
-
-            word_len = randint(*self.word_len)
-            word = choice(self.word_dict[word_len])
-            char_w = randint(*self.char_w)
-            word_w = word_len * char_w
-            word_h = int(char_w * uniform(*self.char_h_ratio))
-            font_path = self.ref_font_path # choice(self.font_paths)
-
-            if self.pre_render:
-                try: 
-                    font = ImageFont.truetype(font_path, 64)
-                    std_l, std_t, std_r, std_b = font.getbbox(word)
-                    if std_r - std_l == 0 or std_b - std_t == 0: 
-                        continue
-                except:
-                    continue
-
-                font_size = int(word_w/(std_r-std_l)*64)
-                font = ImageFont.truetype(font_path, font_size)
-                l, t, r, b = font.getbbox(word)
-                word_w, word_h = r - l, b - t
-                if word_w > self.W or word_h > self.H: 
-                    continue
-
-            m_left, m_top = max(0, int(self.W - word_w*self.amp_factor)//2), max(0, int(self.H - word_h*self.amp_factor)//2)
-            m_right, m_bottom = min(self.W, int(m_left + word_w*self.amp_factor)), min(self.H, int(m_top + word_h*self.amp_factor))
-
-            # render word
-            color_pair = self.colorscale.get_pairs() if self.multi_color else ("rgb(255,255,255)", "rgb(0,0,0)")
-            image = Image.new('RGB', (self.H, self.W), color = color_pair[0])
-            if self.pre_render:
-                draw = ImageDraw.Draw(image)
-                draw.text((int(m_left + word_w/2), int(m_top + word_h/2)), word, fill=color_pair[1], font=font, anchor="mm")
-
-            # mask & seg
-            w, h = image.size
-            mask = torch.ones((h, w))
-            mask[m_top:m_bottom, m_left:m_right] = 0
-            r_bbox = torch.tensor((m_top, m_bottom, m_left, m_right))
-
-            segs = []
-            for i in range(len(word)):
-                seg_i = torch.zeros((h, w))
-                c_left = m_left + i * char_w
-                c_right = min(self.W, c_left + char_w)
-                seg_i[m_top:m_bottom, c_left:c_right] = 1
-                segs.append(seg_i[None])
-            segs = segs + [torch.zeros_like(segs[0]) for i in range(self.word_len[1]-len(segs))]
-            seg = torch.cat(segs, dim=0)
-
-            image = transforms.ToTensor()(image)
-
-            mask = mask[None]
-            masked = image * mask
-            mask = 1 - mask
-
-            seg_mask = torch.cat((torch.ones(len(word)), torch.zeros(self.word_len[1]-len(word))))
-
-            # additional cond
-            txt = ""
-            original_size_as_tuple = torch.tensor((h, w))
-            crop_coords_top_left = torch.tensor((0, 0))
-            target_size_as_tuple = torch.tensor((self.H, self.W))
-
-            batch = {
-                "image": image,
-                "seg": seg,
-                "seg_mask": seg_mask,
-                "mask": mask,
-                "masked": masked,
-                "r_bbox": r_bbox,
-                "label": word,
-                "txt": txt,
-                "original_size_as_tuple": original_size_as_tuple,
-                "crop_coords_top_left": crop_coords_top_left,
-                "target_size_as_tuple": target_size_as_tuple,
-                "name": str(index)
-            }
-
-            return batch
-
-
-class FUNSDDataset(data.Dataset):
-
-    def __init__(self, cfgs, datype) -> None:
-        super().__init__()
-
-        # basic
-        self.type = datype
-        self.character = string.printable[:-6]
-
-        # path
-        self.data_root = ospj(cfgs.data_root, "FUNSD", self.type)
-        self.image_root = ospj(self.data_root, "images")
-        self.anno_root = ospj(self.data_root, "annos")
-        image_paths = sorted(glob.glob(ospj(self.image_root, "*.png")))
-        anno_paths = sorted(glob.glob(ospj(self.anno_root, "*.json")))
-
-        # constraint
-        self.H = cfgs.H
-        self.W = cfgs.W
-        self.word_len = cfgs.word_len
-        self.seq_len = cfgs.seq_len
-        self.mask_min_ratio = cfgs.mask_min_ratio
-        self.aug_text_enabled = cfgs.aug_text_enabled
-        self.aug_text_ratio = cfgs.aug_text_ratio
-
-        self.items = []
-        for image_path, anno_path in zip(image_paths, anno_paths):
-            with open(anno_path, "rb") as fp:
-                annos = json.load(fp)
-            for anno in annos["form"]:
-                for word in anno["words"]:
-                    text = word["text"]
-                    bbox = word["box"]
-                    left, top, right, bottom = bbox
-                    area = (bottom-top) * (right-left)
-
-                    if len(text) < self.word_len[0] or len(text) > self.word_len[1]: continue
-                    if not all([c in self.character for c in text]): continue
-                    if area / (self.H * self.W) < self.mask_min_ratio: continue
-
-                    self.items.append({
-                        "image_path": image_path,
-                        "text": text,
-                        "bbox": bbox,
-                    })
-
-        self.length = len(self.items)
-        self.count = -1
-        self.word_dict = initialize_word_dict()
-    
-    def __len__(self):
-        
-        return self.length
-    
-    def augment(self, image, bbox):
-
-        h, w, _ = image.shape
-        m_left, m_top, m_right, m_bottom = bbox
-
-        mask = np.ones((h, w), dtype=np.uint8)
-        mask[m_top:m_bottom, m_left:m_right] = 0
-
-        if h >= w:
-            delta = (h-w)//2
-            m_left += delta; m_right += delta
-            image = cv2.copyMakeBorder(image, 0,0,delta,delta, cv2.BORDER_REPLICATE)
-            mask = cv2.copyMakeBorder(mask, 0,0,delta,delta, cv2.BORDER_CONSTANT, value = (1,1,1))
-        else:
-            delta = (w-h)//2
-            m_top += delta; m_bottom += delta
-            image = cv2.copyMakeBorder(image, delta,delta,0,0, cv2.BORDER_REPLICATE)
-            mask = cv2.copyMakeBorder(mask, delta,delta,0,0, cv2.BORDER_CONSTANT, value = (1,1,1))
-
-        m_h, m_w = int(m_bottom-m_top), int(m_right-m_left)
-        c_h, c_w = m_top + m_h//2, m_left + m_w//2
-
-        h, w, _ = image.shape
-        area = (m_bottom-m_top) * (m_right-m_left)
-        aug_min_ratio = self.mask_min_ratio * 20
-        if area/(h*w) < aug_min_ratio:
-            d = int((area/aug_min_ratio)**0.5)
-            d = max(d, max(m_h, m_w))
-            if c_h <= h - c_h:
-                delta_top = min(c_h, d//2)
-                delta_bottom = d - delta_top
-            else:
-                delta_bottom = min(h - c_h, d//2)
-                delta_top = d - delta_bottom
-            if c_w <= w - c_w:
-                delta_left = min(c_w, d//2)
-                delta_right = d - delta_left
-            else:
-                delta_right = min(w - c_w, d//2)
-                delta_left = d - delta_right
-
-            n_top, n_bottom = c_h - delta_top, c_h + delta_bottom
-            n_left, n_right = c_w - delta_left, c_w + delta_right
-
-            image = image[n_top:n_bottom, n_left:n_right, :]
-            mask = mask[n_top:n_bottom, n_left:n_right]
-
-            m_top -= n_top; m_bottom -= n_top
-            m_left -= n_left; m_right -= n_left
-
-        h, w, _ = image.shape
-        m_top, m_bottom = int(m_top * (self.H/h)), int(m_bottom * (self.H/h))
-        m_left, m_right = int(m_left * (self.W/w)), int(m_right * (self.W/w))
-        
-        image = cv2.resize(image, (self.W, self.H))
-        mask = cv2.resize(mask, (self.W, self.H))
-
-        r_bbox = torch.tensor((m_top, m_bottom, m_left, m_right))
-        
-        return image, mask, r_bbox
-        
-    def __getitem__(self, index):
-
-        self.count += 1
-
-        item = self.items[index]
-        image_path = item["image_path"]
-        text = item["text"]
-        bbox = item["bbox"]
-
-        aug_text = self.word_dict[len(text)][0] if uniform(0, 1) <= self.aug_text_ratio else text
-
-        image = Image.open(image_path).convert("RGB")
-        w, h = image.size
-        image = np.asarray(image)
-        image, mask, r_bbox = self.augment(image, bbox)
-
-        image = torch.from_numpy(image.transpose(2,0,1)).to(dtype=torch.float32) / 127.5 - 1.0
-
-        mask = torch.from_numpy(mask[None]).to(dtype=torch.float32)
-        masked = image * mask
-        mask = 1 - mask
-
-        seg_mask = torch.cat((torch.ones(len(text)), torch.zeros(self.seq_len-len(text))))
-
-        rendered = region_draw_text(self.H, self.W, r_bbox, aug_text if self.aug_text_enabled else text)
-
-        # additional cond
-        txt = f"\"{aug_text if self.aug_text_enabled else text}\""
-        original_size_as_tuple = torch.tensor((h, w))
-        crop_coords_top_left = torch.tensor((0, 0))
-        target_size_as_tuple = torch.tensor((self.H, self.W))
-
-        batch = {
-            "image": image,
-            "mask": mask,
-            "masked": masked,
-            "seg_mask": seg_mask,
-            "r_bbox": r_bbox,
-            "rendered": rendered,
-            "label": aug_text if self.aug_text_enabled else text,
-            "txt": txt,
-            "original_size_as_tuple": original_size_as_tuple,
-            "crop_coords_top_left": crop_coords_top_left,
-            "target_size_as_tuple": target_size_as_tuple,
-            "name": str(self.count)
-        }
-
-        return batch
-
-class TextOCRDataset(data.Dataset):
-
-    def __init__(self, cfgs, datype) -> None:
-        super().__init__()
-
-        # basic
-        self.type = "val"
-        self.character = string.printable[:-6]
-
-        # path
-        self.data_root = ospj(cfgs.data_root, "TextOCR", self.type)
-        self.image_root = ospj(self.data_root, "images")
-        self.anno_path = ospj(self.data_root, "anno.json")
-
-        # constraint
-        self.H = cfgs.H
-        self.W = cfgs.W
-        self.word_len = cfgs.word_len
-        self.mask_min_ratio = cfgs.mask_min_ratio
-
-        with open(self.anno_path, "rb") as fp:
-            anno = json.load(fp)
-
-        self.items = []
-        for anno in anno["anns"].values():
-
-            img_id = anno["image_id"]
-            text = anno["utf8_string"]
-            bbox = np.array(anno["points"], dtype=np.int32).reshape((-1,2))
-            area = cv2.contourArea(bbox)
-            
-            if text == ".": continue
-            if len(text) < self.word_len[0] or len(text) > self.word_len[1]: continue
-            if not all([c in self.character for c in text]): continue
-            if area / (self.H * self.W) < self.mask_min_ratio: continue
-
-            self.items.append({
-                "image_path": ospj(self.image_root, f"{img_id}.jpg"),
-                "text": text,
-                "bbox": bbox
-            })
-
-        self.length = len(self.items)
-        self.count = -1
-
-    def __len__(self):
-        
-        return self.length
-    
-    def augment(self, image, bbox):
-
-        h, w, _ = image.shape
-        m_top, m_bottom = int(np.min(bbox[:,1])), int(np.max(bbox[:,1]))
-        m_left, m_right = int(np.min(bbox[:,0])), int(np.max(bbox[:,0]))
-
-        mask = np.ones((h, w), dtype=np.uint8)
-        mask = cv2.fillConvexPoly(mask, bbox, 0)
-
-        if h >= w:
-            delta = (h-w)//2
-            m_left += delta; m_right += delta
-            image = cv2.copyMakeBorder(image, 0,0,delta,delta, cv2.BORDER_REPLICATE)
-            mask = cv2.copyMakeBorder(mask, 0,0,delta,delta, cv2.BORDER_CONSTANT, value = (1,1,1))
-        else:
-            delta = (w-h)//2
-            m_top += delta; m_bottom += delta
-            image = cv2.copyMakeBorder(image, delta,delta,0,0, cv2.BORDER_REPLICATE)
-            mask = cv2.copyMakeBorder(mask, delta,delta,0,0, cv2.BORDER_CONSTANT, value = (1,1,1))
-
-        m_h, m_w = int(m_bottom-m_top), int(m_right-m_left)
-        c_h, c_w = m_top + m_h//2, m_left + m_w//2
-
-        h, w, _ = image.shape
-        area = cv2.contourArea(bbox)
-        aug_min_ratio = self.mask_min_ratio * 4
-        if area/(h*w) < aug_min_ratio:
-            d = int((area/aug_min_ratio)**0.5)
-            d = max(d, max(m_h, m_w))
-            if c_h <= h - c_h:
-                delta_top = min(c_h, d//2)
-                delta_bottom = d - delta_top
-            else:
-                delta_bottom = min(h - c_h, d//2)
-                delta_top = d - delta_bottom
-            if c_w <= w - c_w:
-                delta_left = min(c_w, d//2)
-                delta_right = d - delta_left
-            else:
-                delta_right = min(w - c_w, d//2)
-                delta_left = d - delta_right
-
-            n_top, n_bottom = c_h - delta_top, c_h + delta_bottom
-            n_left, n_right = c_w - delta_left, c_w + delta_right
-
-            image = image[n_top:n_bottom, n_left:n_right, :]
-            mask = mask[n_top:n_bottom, n_left:n_right]
-
-            m_top -= n_top; m_bottom -= n_top
-            m_left -= n_left; m_right -= n_left
-
-        h, w, _ = image.shape
-        m_top, m_bottom = int(m_top * (self.H/h)), int(m_bottom * (self.H/h))
-        m_left, m_right = int(m_left * (self.W/w)), int(m_right * (self.W/w))
-        
-        image = cv2.resize(image, (self.W, self.H))
-        mask = cv2.resize(mask, (self.W, self.H))
-
-        r_bbox = torch.tensor((m_top, m_bottom, m_left, m_right))
-        
-        return image, mask, r_bbox
-        
-    def __getitem__(self, index):
-
-        self.count += 1
-        
-        item = self.items[index]
-        image_path = item["image_path"]
-        text = item["text"]
-        bbox = item["bbox"]
-
-        image = Image.open(image_path).convert("RGB")
-        w, h = image.size
-        image = np.asarray(image)
-        image, mask, r_bbox = self.augment(image, bbox)
-
-        image = torch.from_numpy(image.transpose(2,0,1)).to(dtype=torch.float32) / 127.5 - 1.0
-
-        mask = torch.from_numpy(mask[None]).to(dtype=torch.float32)
-        masked = image * mask
-        mask = 1 - mask
-
-        seg_mask = torch.cat((torch.ones(len(text)), torch.zeros(self.word_len[1]-len(text))))
-
-        # additional cond
-        txt = ""
-        original_size_as_tuple = torch.tensor((h, w))
-        crop_coords_top_left = torch.tensor((0, 0))
-        target_size_as_tuple = torch.tensor((self.H, self.W))
-
-        batch = {
-            "image": image,
-            "mask": mask,
-            "masked": masked,
-            "seg_mask": seg_mask,
-            "r_bbox": r_bbox,
-            "label": text,
-            "txt": txt,
-            "original_size_as_tuple": original_size_as_tuple,
-            "crop_coords_top_left": crop_coords_top_left,
-            "target_size_as_tuple": target_size_as_tuple,
-            "name": str(self.count)
-        }
-
-        return batch
-
 
 class ICDAR13Dataset(data.Dataset):
 

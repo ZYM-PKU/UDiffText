@@ -1,8 +1,0 @@
-target: TemplateDataset
-params:
-
-  data_root: './templates'
-
-  H: 512
-  W: 512
-  seq_len: 12
