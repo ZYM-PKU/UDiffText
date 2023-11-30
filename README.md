@@ -22,7 +22,7 @@ cd UDiffText
 2. Install required Python packages
 
 ```
-conda create -n udiff python=3.9
+conda create -n udiff python=3.11
 conda activate udiff
 pip install -r requirements.txt
 ```

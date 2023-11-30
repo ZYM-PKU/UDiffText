@@ -44,14 +44,6 @@ model:
       params:
         emb_models:
           # crossattn cond
-          # - is_trainable: False
-          #   input_key: txt
-          #   target: sgm.modules.encoders.modules.FrozenOpenCLIPEmbedder
-          #   params:
-          #     arch: ViT-H-14
-          #     version: ./checkpoints/encoders/OpenCLIP/ViT-H-14/open_clip_pytorch_model.bin
-          #     layer: penultimate
-          # add crossattn cond
           - is_trainable: False
             input_key: label
             target: sgm.modules.encoders.modules.LabelEncoder
