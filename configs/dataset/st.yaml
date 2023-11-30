@@ -1,0 +1,13 @@
+target: SynthTextDataset
+params:
+
+  data_root: '/data/zhaoym/TextDesign-XL'
+
+  H: 512
+  W: 512
+  word_len: [1, 12]
+  mask_min_ratio: 0.01
+  seg_min_ratio: 0.001
+
+  length: 100000
+  use_cached: True

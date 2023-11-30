@@ -1,0 +1,9 @@
+target: T2IDataset
+params:
+
+  data_root: '/data/zhaoym/TextDesign-XL'
+  length: 10000
+
+  H: 512
+  W: 512
+

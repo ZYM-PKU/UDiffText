@@ -1,0 +1,9 @@
+target: TextOCRDataset
+params:
+
+  data_root: '/data/zhaoym/TextDesign-XL'
+
+  H: 512
+  W: 512
+  word_len: [1, 8]
+  mask_min_ratio: 0.01

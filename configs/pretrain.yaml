@@ -1,0 +1,51 @@
+# path
+ckpt_dir: './checkpoints/encoders/LabelEncoder'
+
+dataset:
+  target: dataset.dataloader.LabelDataset
+  params:
+    size: 224
+    length: 100000
+    data_root: '/data/zhaoym/TextDesign-XL'
+    min_len: 1
+    max_len: 12
+
+
+model:
+  target: sgm.modules.encoders.modules.LabelEncoder
+  params:
+    trainable: True
+    max_len: 12
+    emb_dim: 2048
+    n_heads: 8
+    n_trans_layers: 12
+    lr: 1e-5
+    lambda_cls: 0.1
+    lambda_pos: 0.1
+
+    visual_config:
+      target: sgm.modules.encoders.modules.ViTSTREncoder
+      params:
+        freeze: True
+        ckpt_path: "./checkpoints/encoders/ViTSTR/vitstr_base_patch16_224.pth"
+        size: 224
+        patch_size: 16
+        embed_dim: 768
+        depth: 12
+        num_heads: 12
+        mlp_ratio: 4
+        qkv_bias: True
+        in_chans: 1
+
+
+num_workers: 0
+batch_size: 256
+check_freq: 5
+
+
+lightning:
+  max_epochs: 1000
+  accelerator: "cuda"
+  devices: 
+    - 3
+  default_root_dir: "./logs/pre_logs"

@@ -1,0 +1,46 @@
+type: "test_baseline"
+
+# path
+dataset_cfg_path: './configs/dataset/funsd.yaml'
+output_dir: "./outputs"
+
+# runtime
+batch_size: 1
+num_workers: 0
+gpu: 0
+max_iter: 100
+shuffle: False
+quan_test: True
+
+# ocr
+predictor_config:
+  target: sgm.modules.predictors.model.ParseqPredictor
+  params:
+    ckpt_path: "./checkpoints/predictors/parseq-bb5792a6.pt"
+
+baseline: textdiffuser
+
+# diffste
+diffste_opt:
+  ckpt_path: "./checkpoints/baselines/diffste/diffste.ckpt"
+  num_inference_steps: 30
+  num_sample_per_image: 1
+  guidance_scale: 7.5
+
+# textdiffuser
+textdiffuser_opt:
+  ckpt_path: "./checkpoints/baselines/textdiffuser/diffusion_backbone"
+  character_segmenter_path: "./checkpoints/baselines/textdiffuser/text_segmenter.pth"
+  sample_steps: 50
+  classifier_free_scale: 7.5
+  sample_num: 1
+
+# mostel
+mostel_opt:
+  ckpt_path: "./checkpoints/baselines/mostel/mostel.pth"
+  shape: [64, 256]
+  num_control_points: 10
+  tps_margins: [0.05, 0.05]
+  stn_activation: "tanh"
+  TPS_ON: True
+  tps_outputsize: [64, 256]

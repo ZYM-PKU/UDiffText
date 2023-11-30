@@ -1,0 +1,9 @@
+target: T2ISPEDataset
+params:
+
+  data_root: './dataset/cache'
+  length: 10000
+
+  H: 1024
+  W: 1024
+

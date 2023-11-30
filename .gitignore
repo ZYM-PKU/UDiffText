@@ -1,0 +1,12 @@
+**/__pycache__
+/.vscode
+/Baselines
+/checkpoints
+/demo
+/logs
+/outputs
+/src
+/temp
+run.sh
+demo.py
+test_baseline.py
