@@ -10,4 +10,29 @@
 
 ### 📬 News
 
-### :wrench: Installation
+**2023.11.30** Upload version 1.0
+
+### 🔨 Installation
+1. Clone this repo: 
+```
+git clone https://github.com/ZYM-PKU/UDiffText.git
+cd UDiffText
+```
+
+2. Install required Python packages
+
+```
+conda create -n udiff python=3.9
+conda activate udiff
+pip install -r requirements.txt
+```
+
+### 💻 Training
+
+### 📏 Evaluation
+
+### 🖼️ Demo
+
+### 🎉 Acknowledgement
+
+### 🪬 Citation
