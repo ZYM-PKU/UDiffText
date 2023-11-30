@@ -45,27 +45,33 @@ checkpoints
 
 ### 💻 Training
 
-1. Make the checkpoint directory and build the tree structure
+1. Prepare your data
+
+- Create a data directory **{your data root}** in your disk and put your data in it.
+- For the downloading and preprocessing of Laion-OCR dataset, please refer to [TextDiffuser](https://github.com/microsoft/unilm/tree/master/textdiffuser) and our **./scripts/preprocess/laion_ocr_pre.ipynb**.
+
+2. Train the character-level encoder
+
+Set the parameters in **./configs/pretrain.yaml** and run:
 
 ```
-mkdir ./checkpoints
-
-checkpoints
-├── AEs                    // AutoEncoder
-├── encoders             
-    ├── LabelEncoder       // Character-level encoder
-    └── ViTSTR             // STR encoder
-├── predictors             // STR model
-├── pretrained             // Pretrained SD
-└── ***.ckpt               // UDiffText checkpoint
+python pretrain.py
 ```
 
-2. Set training parameters in configs/train.yaml, especially the paths:
+3. Train the UDiffText model
+
+Set the parameters in **./configs/train.yaml**, especially the paths:
 
 ```
-load_ckpt_path: ./checkpoints/pretrained/512-inpainting-ema.ckpt // Pretrained SD
-model_cfg_path: ./configs/train/textdesign_sd_2.yaml // Model configuration
-dataset_cfg_path: ./configs/dataset/locr.yaml // Use Laion-OCR dataset
+load_ckpt_path: ./checkpoints/pretrained/512-inpainting-ema.ckpt // Checkpoint of the pretrained SD
+model_cfg_path: ./configs/train/textdesign_sd_2.yaml // UDiffText model config
+dataset_cfg_path: ./configs/dataset/locr.yaml // Laion-OCR dataset config
+```
+
+and run:
+
+```
+python train.py
 ```
 
 ### 📏 Evaluation

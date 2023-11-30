@@ -1,10 +1,7 @@
 **/__pycache__
 .vscode
-Baselines
 checkpoints
 logs
 outputs
 src
 temp
-run.sh
-test_baseline.py

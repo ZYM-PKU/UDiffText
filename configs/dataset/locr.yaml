@@ -1,7 +1,7 @@
 target: LAIONOCRDataset
 params:
 
-  data_root: '/data/zhaoym/TextDesign-XL'
+  data_root: '{your data root}'
 
   H: 512
   W: 512
