@@ -9,7 +9,7 @@ dataset_cfg_path: ./configs/dataset/locr.yaml
 # param
 save_ckpt_freq: 1
 num_workers: 0
-batch_size: 2
+batch_size: 8
 base_learning_rate: 5.0e-5
 shuffle: False
 
@@ -19,8 +19,6 @@ lightning:
   accelerator: gpu
   strategy: ddp_find_unused_parameters_true
   accumulate_grad_batches: 4 
-  devices: 
-    - 1
-    - 2
+  devices: [1,2,3,4,5,6,7,8]
   default_root_dir: ./logs/base_logs
   profiler: simple 

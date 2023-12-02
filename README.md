@@ -65,7 +65,7 @@ Set the parameters in **./configs/train.yaml**, especially the paths:
 ```
 load_ckpt_path: ./checkpoints/pretrained/512-inpainting-ema.ckpt // Checkpoint of the pretrained SD
 model_cfg_path: ./configs/train/textdesign_sd_2.yaml // UDiffText model config
-dataset_cfg_path: ./configs/dataset/locr.yaml // Laion-OCR dataset config
+dataset_cfg_path: ./configs/dataset/locr.yaml // Use the Laion-OCR dataset
 ```
 
 and run:
@@ -76,7 +76,24 @@ python train.py
 
 ### 📏 Evaluation
 
+1. Download our available [checkpoints]() and put them in the corresponding directories in **./checkpoints**.
+
+2. Set the parameters in **./configs/test.yaml**, especially the paths:
+
+```
+load_ckpt_path: "./checkpoints/***.ckpt"  // Downloaded UDiffText checkpoint
+model_cfg_path: "./configs/test/textdesign_sd_2.yaml"  // UDiffText model config
+dataset_cfg_path: "./configs/dataset/locr.yaml"  // Use the Laion-OCR dataset
+```
+
+and run:
+
+```
+python test.py
+```
+
 ### 🖼️ Demo
+
 
 ### 🎉 Acknowledgement
 

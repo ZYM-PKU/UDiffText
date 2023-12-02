@@ -1,19 +1,19 @@
 type: "test"
 
 # path
-load_ckpt_path: "./checkpoints/st-step=100000+la-step=100000-v1.ckpt"  # pretrained/512-inpainting-ema.ckpt
-model_cfg_path: "./configs/test/textdesign_sd_2.yaml"  # sd_2_inpainting.yaml textdesign_sd_2.yaml
-dataset_cfg_path: "./configs/dataset/tsg.yaml"
+load_ckpt_path: "./checkpoints/***.ckpt"
+model_cfg_path: "./configs/test/textdesign_sd_2.yaml"
+dataset_cfg_path: "./configs/dataset/locr.yaml"
 output_dir: "./outputs"
 
 # param
 channel: 4 # AE latent channel
 factor: 8 # AE downsample factor
-scale: [3.2, 0.0] # content scale, style scale
+scale: [4.0, 0.0] # content scale, style scale
 noise_iters: 10
 force_uc_zero_embeddings: ["ref", "label"]
 aae_enabled: False
-detailed: True
+detailed: False
 dual_conditioner: False
 
 # runtime
@@ -24,7 +24,7 @@ num_workers: 0
 gpu: 1
 max_iter: 100
 shuffle: True
-quan_test: False
+quan_test: True
 
 # ocr
 ocr_enabled: True
