@@ -251,38 +251,11 @@ class EulerEDMSampler(EDMSampler):
 
         return x
 
-    def create_pascal_label_colormap(self):
-        """
-        PASCAL VOC 分割数据集的类别标签颜色映射label colormap
-
-        返回:
-            可视化分割结果的颜色映射Colormap
-        """
-        colormap = np.zeros((256, 3), dtype=int)
-        ind = np.arange(256, dtype=int)
-
-        for shift in reversed(range(8)):
-            for channel in range(3):
-                colormap[:, channel] |= ((ind >> channel) & 1) << shift
-            ind >>= 3
-
-        return colormap
-    
-    def save_segment_map(self, H, W, attn_maps, tokens=None, save_name=None):
-
-        colormap = self.create_pascal_label_colormap()
+    def save_segment_map(self, attn_maps, tokens=None, save_name=None):
 
         sections = []
         for i in range(len(tokens)): 
             attn_map = attn_maps[i]
-            attn_map_t = np.tile(attn_map[None], (1,3,1,1)) # b, 3, h, w
-            attn_map_t = torch.from_numpy(attn_map_t)
-            attn_map_t = F.interpolate(attn_map_t, (W, H))
-
-            color = torch.from_numpy(colormap[i+1][None,:,None,None] / 255.0)
-            colored_attn_map = attn_map_t * color
-            colored_attn_map = colored_attn_map.to(device=image_.device)
-
             sections.append(attn_map)
         
         section = np.stack(sections)
@@ -370,8 +343,7 @@ class EulerEDMSampler(EDMSampler):
             local_loss = torch.zeros(1)
         if save_attn:
             attn_map = model.model.diffusion_model.save_attn_map(save_name=name, tokens=batch["label"][0])
-            H, W = batch["target_size_as_tuple"][0]
-            self.save_segment_map(H, W, attn_map, tokens=batch["label"][0], save_name=name)
+            self.save_segment_map(attn_map, tokens=batch["label"][0], save_name=name)
 
         d = to_d(x, sigma_hat, denoised)
         dt = append_dims(next_sigma - sigma_hat, x.ndim)
@@ -552,8 +524,7 @@ class EulerEDMDualSampler(EulerEDMSampler):
             local_loss = torch.zeros(1)
         if save_attn:
             attn_map = model.model.diffusion_model.save_attn_map(save_name=name, save_single=True)
-            H, W = batch["target_size_as_tuple"][0]
-            self.save_segment_map(H, W, attn_map, tokens=batch["label"][0], save_name=name)
+            self.save_segment_map(attn_map, tokens=batch["label"][0], save_name=name)
 
         d = to_d(x, sigma_hat, denoised)
         dt = append_dims(next_sigma - sigma_hat, x.ndim)
