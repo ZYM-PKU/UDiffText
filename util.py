@@ -4,18 +4,18 @@ from sgm.util import instantiate_from_config
 from sgm.modules.diffusionmodules.sampling import *
 
 
-def init_model(cfg):
+def init_model(cfgs):
 
-    model_cfg = OmegaConf.load(cfg.model_cfg_path)
-    ckpt = cfg.load_ckpt_path
+    model_cfg = OmegaConf.load(cfgs.model_cfg_path)
+    ckpt = cfgs.load_ckpt_path
 
     model = instantiate_from_config(model_cfg.model)
     model.init_from_ckpt(ckpt)
 
-    if cfg.type == "train":
+    if cfgs.type == "train":
         model.train()
     else:
-        model.to(torch.device("cuda", index=cfg.gpu))
+        model.to(torch.device("cuda", index=cfgs.gpu))
         model.eval()
         model.freeze()
 
