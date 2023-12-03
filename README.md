@@ -1,7 +1,7 @@
 ## UDiffText: A Unified Framework for High-quality Text Synthesis in Arbitrary Images via Character-aware Diffusion Models
 
 <a href='https://arxiv.org/pdf/******'><img src='https://img.shields.io/badge/Arxiv-******-DF826C'></a> 
-<a href='https://github.com/ZYM-PKU/UDiffText'><img src='https://img.shields.io/badge/Code-UDiffText-D0F288'></a> 
+<a href='https://udifftext.github.io/'><img src='https://img.shields.io/badge/Project-UDiffText-D0F288'></a> 
 <a href='https://huggingface.co/spaces/ZYMPKU/UDiffText'><img src='https://img.shields.io/badge/%F0%9F%A4%97%20Demo-UDiffText-8ADAB2'></a> 
 
 #### Our proposed UDiffText is capable of synthesizing accurate and harmonious text in either synthetic or real-word images, thus can be applied to tasks like scene text editing (a), arbitrary text generation (b) and accurate T2I generation (c)
@@ -10,6 +10,8 @@
 
 ### 📬 News
 
+**2023.12.3** Build demo
+**2023.12.1** Build project page
 **2023.11.30** Upload version 1.0
 
 ### 🔨 Installation
@@ -94,13 +96,15 @@ python test.py
 
 ### 🖼️ Demo
 
-In order to run a interactive demo on your own mechine, execute the code:
+In order to run an interactive demo on your own mechine, execute the code:
 
 ```
 python demo.py
 ```
 
-, or try our online demo at [hugging face](https://huggingface.co/spaces/ZYMPKU/UDiffText).
+, or try our online demo at [hugging face](https://huggingface.co/spaces/ZYMPKU/UDiffText):
+
+![Demo](demo/demo.png)
 
 ### 🎉 Acknowledgement
 
