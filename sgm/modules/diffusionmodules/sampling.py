@@ -7,7 +7,6 @@ from typing import Dict, Union
 
 import imageio
 import torch
-import json
 import numpy as np
 import torch.nn.functional as F
 from omegaconf import ListConfig, OmegaConf
@@ -269,12 +268,10 @@ class EulerEDMSampler(EDMSampler):
 
         return colormap
     
-    def save_segment_map(self, image, attn_maps, tokens=None, save_name=None):
+    def save_segment_map(self, H, W, attn_maps, tokens=None, save_name=None):
 
         colormap = self.create_pascal_label_colormap()
-        H, W = image.shape[-2:]
 
-        image_ = image*0.3
         sections = []
         for i in range(len(tokens)): 
             attn_map = attn_maps[i]
@@ -286,13 +283,10 @@ class EulerEDMSampler(EDMSampler):
             colored_attn_map = attn_map_t * color
             colored_attn_map = colored_attn_map.to(device=image_.device)
 
-            image_ += colored_attn_map*0.7
             sections.append(attn_map)
         
         section = np.stack(sections)
-        np.save(f"temp/seg_map/seg_{save_name}.npy", section)
-
-        save_image(image_, f"temp/seg_map/seg_{save_name}.png", normalize=True)
+        np.save(f"./temp/seg_map/seg_{save_name}.npy", section)
 
     def get_init_noise(self, cfgs, model, cond, batch, uc=None):
 
@@ -376,8 +370,8 @@ class EulerEDMSampler(EDMSampler):
             local_loss = torch.zeros(1)
         if save_attn:
             attn_map = model.model.diffusion_model.save_attn_map(save_name=name, tokens=batch["label"][0])
-            denoised_decode = model.decode_first_stage(denoised) if denoised_decode is None else denoised_decode
-            self.save_segment_map(denoised_decode, attn_map, tokens=batch["label"][0], save_name=name)
+            H, W = batch["target_size_as_tuple"][0]
+            self.save_segment_map(H, W, attn_map, tokens=batch["label"][0], save_name=name)
 
         d = to_d(x, sigma_hat, denoised)
         dt = append_dims(next_sigma - sigma_hat, x.ndim)
@@ -410,7 +404,7 @@ class EulerEDMSampler(EDMSampler):
 
             alpha = 20 * np.sqrt(scales[i])
             update = aae_enabled
-            save_loss = detailed
+            save_loss = aae_enabled
             save_attn = detailed and (i == (num_sigmas-1)//2)
             save_inter = aae_enabled
 
@@ -558,8 +552,8 @@ class EulerEDMDualSampler(EulerEDMSampler):
             local_loss = torch.zeros(1)
         if save_attn:
             attn_map = model.model.diffusion_model.save_attn_map(save_name=name, save_single=True)
-            denoised_decode = model.decode_first_stage(denoised) if denoised_decode is None else denoised_decode
-            self.save_segment_map(denoised_decode, attn_map, tokens=batch["label"][0], save_name=name)
+            H, W = batch["target_size_as_tuple"][0]
+            self.save_segment_map(H, W, attn_map, tokens=batch["label"][0], save_name=name)
 
         d = to_d(x, sigma_hat, denoised)
         dt = append_dims(next_sigma - sigma_hat, x.ndim)
