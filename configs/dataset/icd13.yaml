@@ -5,7 +5,7 @@ params:
 
   H: 512
   W: 512
-  word_len: [1, 12]
+  word_len: [1, 8]
   seq_len: 12
   mask_min_ratio: 0.01
   aug_text_enabled: True

@@ -46,5 +46,5 @@ lightning:
   max_epochs: 1000
   accelerator: "cuda"
   devices: 
-    - 3
+    - 0
   default_root_dir: "./logs/pre_logs"

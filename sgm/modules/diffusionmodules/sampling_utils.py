@@ -7,10 +7,7 @@ from ...util import append_dims
 class NoDynamicThresholding:
     def __call__(self, uncond, cond, scale):
         return uncond + scale * (cond - uncond)
-
-class DualThresholding: # Dual condition CFG (from instructPix2Pix)
-    def __call__(self, uncond_1, uncond_2, cond, scale):
-        return uncond_1 + scale[0] * (uncond_2 - uncond_1) + scale[1] * (cond - uncond_2)
+    
 
 def linear_multistep_coeff(order, t, i, j, epsrel=1e-4):
     if order - 1 > i:

@@ -14,6 +14,7 @@ from transformers import (
     ByT5Tokenizer,
     CLIPTextModel,
     CLIPTokenizer,
+    CLIPVisionModel,
     T5EncoderModel,
     T5Tokenizer,
 )
@@ -38,18 +39,19 @@ import pytorch_lightning as pl
 from torchvision import transforms
 from timm.models.vision_transformer import VisionTransformer
 from safetensors.torch import load_file as load_safetensors
+from torchvision.utils import save_image
 
 # disable warning
 from transformers import logging
 logging.set_verbosity_error()
 
 class AbstractEmbModel(nn.Module):
-    def __init__(self, is_add_embedder=False):
+    def __init__(self):
         super().__init__()
         self._is_trainable = None
         self._ucg_rate = None
         self._input_key = None
-        self.is_add_embedder = is_add_embedder
+        self._emb_key = None
 
     @property
     def is_trainable(self) -> bool:
@@ -63,6 +65,10 @@ class AbstractEmbModel(nn.Module):
     def input_key(self) -> str:
         return self._input_key
 
+    @property
+    def emb_key(self) -> str:
+        return self._emb_key
+
     @is_trainable.setter
     def is_trainable(self, value: bool):
         self._is_trainable = value
@@ -74,6 +80,10 @@ class AbstractEmbModel(nn.Module):
     @input_key.setter
     def input_key(self, value: str):
         self._input_key = value
+
+    @emb_key.setter
+    def emb_key(self, value: str):
+        self._emb_key = value
 
     @is_trainable.deleter
     def is_trainable(self):
@@ -87,8 +97,13 @@ class AbstractEmbModel(nn.Module):
     def input_key(self):
         del self._input_key
 
+    @emb_key.deleter
+    def emb_key(self):
+        del self._emb_key
+
 
 class GeneralConditioner(nn.Module):
+    
     OUTPUT_DIM2KEYS = {2: "vector", 3: "crossattn", 4: "concat", 5: "concat"}
     KEY2CATDIM = {"vector": 1, "crossattn": 2, "concat": 1}
 
@@ -109,7 +124,8 @@ class GeneralConditioner(nn.Module):
                 f"Initialized embedder #{n}: {embedder.__class__.__name__} "
                 f"with {count_params(embedder, False)} params. Trainable: {embedder.is_trainable}"
             )
-
+            if "emb_key" in embconfig:
+                embedder.emb_key = embconfig["emb_key"]
             if "input_key" in embconfig:
                 embedder.input_key = embconfig["input_key"]
             elif "input_keys" in embconfig:
@@ -156,13 +172,10 @@ class GeneralConditioner(nn.Module):
             if not isinstance(emb_out, (list, tuple)):
                 emb_out = [emb_out]
             for emb in emb_out:
-                if embedder.is_add_embedder:
-                    out_key = "add_crossattn"
+                if embedder.emb_key is not None:
+                    out_key = embedder.emb_key
                 else:
                     out_key = self.OUTPUT_DIM2KEYS[emb.dim()]
-                if embedder.input_key == "mask":
-                    H, W = batch["image"].shape[-2:]
-                    emb = nn.functional.interpolate(emb, (H//8, W//8))
                 if embedder.ucg_rate > 0.0 and embedder.legacy_ucg_val is None:
                     emb = (
                         expand_dims_like(
@@ -203,28 +216,6 @@ class GeneralConditioner(nn.Module):
             embedder.ucg_rate = rate
         return c, uc
     
-
-class DualConditioner(GeneralConditioner):
-
-    def get_unconditional_conditioning(
-        self, batch_c, batch_uc_1=None, batch_uc_2=None, force_uc_zero_embeddings=None
-    ):
-        if force_uc_zero_embeddings is None:
-            force_uc_zero_embeddings = []
-        ucg_rates = list()
-        for embedder in self.embedders:
-            ucg_rates.append(embedder.ucg_rate)
-            embedder.ucg_rate = 0.0
-
-        c = self(batch_c)
-        uc_1 = self(batch_uc_1, force_uc_zero_embeddings) if batch_uc_1 is not None else None
-        uc_2 = self(batch_uc_2, force_uc_zero_embeddings[:1]) if batch_uc_2 is not None else None
-
-        for embedder, rate in zip(self.embedders, ucg_rates):
-            embedder.ucg_rate = rate
-
-        return c, uc_1, uc_2
-
 
 class InceptionV3(nn.Module):
     """Wrapper around the https://github.com/mseitzer/pytorch-fid inception
@@ -409,7 +400,6 @@ class FrozenCLIPEmbedder(AbstractEmbModel):
 
     def freeze(self):
         self.transformer = self.transformer.eval()
-
         for param in self.parameters():
             param.requires_grad = False
 
@@ -694,24 +684,24 @@ class FrozenOpenCLIPImageEmbedder(AbstractEmbModel):
         if self.output_tokens:
             z, tokens = z[0], z[1]
         z = z.to(image.dtype)
-        if self.ucg_rate > 0.0 and not no_dropout and not (self.max_crops > 0):
-            z = (
-                torch.bernoulli(
-                    (1.0 - self.ucg_rate) * torch.ones(z.shape[0], device=z.device)
-                )[:, None]
-                * z
-            )
-            if tokens is not None:
-                tokens = (
-                    expand_dims_like(
-                        torch.bernoulli(
-                            (1.0 - self.ucg_rate)
-                            * torch.ones(tokens.shape[0], device=tokens.device)
-                        ),
-                        tokens,
-                    )
-                    * tokens
-                )
+        # if self.ucg_rate > 0.0 and not no_dropout and not (self.max_crops > 0):
+        #     z = (
+        #         torch.bernoulli(
+        #             (1.0 - self.ucg_rate) * torch.ones(z.shape[0], device=z.device)
+        #         )[:, None]
+        #         * z
+        #     )
+        #     if tokens is not None:
+        #         tokens = (
+        #             expand_dims_like(
+        #                 torch.bernoulli(
+        #                     (1.0 - self.ucg_rate)
+        #                     * torch.ones(tokens.shape[0], device=tokens.device)
+        #                 ),
+        #                 tokens,
+        #             )
+        #             * tokens
+        #         )
         if self.unsqueeze_dim:
             z = z[:, None, :]
         if self.output_tokens:
@@ -807,7 +797,7 @@ class FrozenCLIPT5Encoder(AbstractEmbModel):
         return [clip_z, t5_z]
 
 
-class SpatialRescaler(nn.Module):
+class SpatialRescaler(AbstractEmbModel):
     def __init__(
         self,
         n_stages=1,
@@ -846,6 +836,9 @@ class SpatialRescaler(nn.Module):
                 padding=kernel_size // 2,
             )
         self.wrap_video = wrap_video
+    
+    def freeze(self):
+        pass
 
     def forward(self, x):
         if self.wrap_video and x.ndim == 5:

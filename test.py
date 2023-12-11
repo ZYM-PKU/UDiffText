@@ -22,30 +22,17 @@ def predict(cfgs, model, sampler, batch):
     
     with context():
         
-        batch, batch_uc_1, batch_uc_2 = prepare_batch(cfgs, batch)
+        batch, batch_uc_1 = prepare_batch(cfgs, batch)
 
-        if cfgs.dual_conditioner:
-            c, uc_1, uc_2 = model.conditioner.get_unconditional_conditioning(
-                batch,
-                batch_uc_1=batch_uc_1,
-                batch_uc_2=batch_uc_2,
-                force_uc_zero_embeddings=cfgs.force_uc_zero_embeddings,
-            )
-        else:
-            c, uc_1 = model.conditioner.get_unconditional_conditioning(
-                batch,
-                batch_uc=batch_uc_1,
-                force_uc_zero_embeddings=cfgs.force_uc_zero_embeddings,
-            )
+        c, uc_1 = model.conditioner.get_unconditional_conditioning(
+            batch,
+            batch_uc=batch_uc_1,
+            force_uc_zero_embeddings=cfgs.force_uc_zero_embeddings,
+        )
         
-        if cfgs.dual_conditioner:
-            x = sampler.get_init_noise(cfgs, model, cond=c, batch=batch, uc_1=uc_1, uc_2=uc_2)
-            samples_z = sampler(model, x, cond=c, batch=batch, uc_1=uc_1, uc_2=uc_2, init_step=0,
-                                aae_enabled = cfgs.aae_enabled, detailed = cfgs.detailed)
-        else:
-            x = sampler.get_init_noise(cfgs, model, cond=c, batch=batch, uc=uc_1)
-            samples_z = sampler(model, x, cond=c, batch=batch, uc=uc_1, init_step=0,
-                                aae_enabled = cfgs.aae_enabled, detailed = cfgs.detailed)
+        x = sampler.get_init_noise(cfgs, model, cond=c, batch=batch, uc=uc_1)
+        samples_z = sampler(model, x, cond=c, batch=batch, uc=uc_1, init_step=0,
+                            aae_enabled = cfgs.aae_enabled, detailed = cfgs.detailed)
 
         samples_x = model.decode_first_stage(samples_z)
         samples = torch.clamp((samples_x + 1.0) / 2.0, min=0.0, max=1.0)
@@ -56,15 +43,18 @@ def predict(cfgs, model, sampler, batch):
 def test(model, sampler, dataloader, cfgs):
     
     output_dir = cfgs.output_dir
+    os.system(f"rm -rf {output_dir}")
+    os.makedirs(output_dir, exist_ok=True)
     real_dir = ospj(output_dir, "real")
     fake_dir = ospj(output_dir, "fake")
-    os.makedirs(output_dir, exist_ok=True)
-    os.system(f"rm -rf {ospj(output_dir, '*')}")
     os.makedirs(real_dir, exist_ok=True)
     os.makedirs(fake_dir, exist_ok=True)
-    os.system(f"rm -rf ./temp/attn_map/*")
-    os.system(f"rm -rf ./temp/seg_map/*")
-    os.system(f"rm -rf ./temp/inters/*")
+
+    temp_dir = cfgs.temp_dir
+    os.system(f"rm -rf {temp_dir}")
+    os.makedirs(ospj(temp_dir, "attn_map"), exist_ok=True)
+    os.makedirs(ospj(temp_dir, "seg_map"), exist_ok=True)
+    os.makedirs(ospj(temp_dir, "inters"), exist_ok=True)
 
     if cfgs.ocr_enabled:
         predictor = instantiate_from_config(cfgs.predictor_config)

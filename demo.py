@@ -3,12 +3,38 @@ import torch
 import os, glob
 import numpy as np
 import gradio as gr
+from PIL import Image
 from omegaconf import OmegaConf
+from contextlib import nullcontext
 from pytorch_lightning import seed_everything
-from torchvision.utils import save_image
 from os.path import join as ospj
 
-from test import *
+from util import *
+
+
+def predict(cfgs, model, sampler, batch):
+
+    context = nullcontext if cfgs.aae_enabled else torch.no_grad
+    
+    with context():
+        
+        batch, batch_uc_1 = prepare_batch(cfgs, batch)
+
+        c, uc_1 = model.conditioner.get_unconditional_conditioning(
+            batch,
+            batch_uc=batch_uc_1,
+            force_uc_zero_embeddings=cfgs.force_uc_zero_embeddings,
+        )
+        
+        x = sampler.get_init_noise(cfgs, model, cond=c, batch=batch, uc=uc_1)
+        samples_z = sampler(model, x, cond=c, batch=batch, uc=uc_1, init_step=0,
+                            aae_enabled = cfgs.aae_enabled, detailed = cfgs.detailed)
+
+        samples_x = model.decode_first_stage(samples_z)
+        samples = torch.clamp((samples_x + 1.0) / 2.0, min=0.0, max=1.0)
+
+        return samples, samples_z
+
 
 def demo_predict(input_blk, text, num_samples, steps, scale, seed, show_detail):
 
@@ -92,6 +118,10 @@ def demo_predict(input_blk, text, num_samples, steps, scale, seed, show_detail):
 
 if __name__ == "__main__":
 
+    os.makedirs("./temp", exist_ok=True)
+    os.makedirs("./temp/attn_map", exist_ok=True)
+    os.makedirs("./temp/seg_map", exist_ok=True)
+
     cfgs = OmegaConf.load("./configs/demo.yaml")
 
     model = init_model(cfgs)
@@ -105,15 +135,15 @@ if __name__ == "__main__":
             gr.HTML(
                 """
                 <div style="text-align: center; max-width: 1200px; margin: 20px auto;">
-                <h1 style="font-weight: 600; font-size: 2rem; margin: 0rem">
+                <h1 style="font-weight: 600; font-size: 2rem; margin: 0.5rem;">
                     UDiffText: A Unified Framework for High-quality Text Synthesis in Arbitrary Images via Character-aware Diffusion Models
                 </h1>        
-                <h3 style="font-weight: 450; font-size: 1rem; margin: 0rem"> 
-                    [<a href="" style="color:blue;">arXiv</a>] 
-                    [<a href="" style="color:blue;">Code</a>]
-                    [<a href="" style="color:blue;">ProjectPage</a>]
-                </h3> 
-                <h2 style="text-align: left; font-weight: 450; font-size: 1rem; margin-top: 0.5rem; margin-bottom: 0.5rem">
+                <ul style="text-align: center; margin: 0.5rem;"> 
+                    <li style="display: inline-block; margin:auto;"><a href='https://arxiv.org/abs/2312.04884'><img src='https://img.shields.io/badge/Arxiv-2312.04884-DF826C'></a></li>
+                    <li style="display: inline-block; margin:auto;"><a href='https://github.com/ZYM-PKU/UDiffText'><img src='https://img.shields.io/badge/Code-UDiffText-D0F288'></a></li>
+                    <li style="display: inline-block; margin:auto;"><a href='https://udifftext.github.io'><img src='https://img.shields.io/badge/Project-UDiffText-8ADAB2'></a></li>
+                </ul> 
+                <h2 style="text-align: left; font-weight: 450; font-size: 1rem; margin: 0.5rem;">
                     Our proposed UDiffText is capable of synthesizing accurate and harmonious text in either synthetic or real-word images, thus can be applied to tasks like scene text editing (a), arbitrary text generation (b) and accurate T2I generation (c)
                 </h2>
                 <div align=center><img src="file/demo/teaser.png" alt="UDiffText" width="80%"></div> 
@@ -135,7 +165,7 @@ if __name__ == "__main__":
                     steps = gr.Slider(label="Steps", info ="denoising sampling steps", minimum=1, maximum=200, value=50, step=1)
                     scale = gr.Slider(label="Guidance Scale", info="the scale of classifier-free guidance (CFG)", minimum=0.0, maximum=10.0, value=4.0, step=0.1)
                     seed = gr.Slider(label="Seed", info="random seed for noise initialization", minimum=0, maximum=2147483647, step=1, randomize=True)
-                    show_detail = gr.Checkbox(label="Show Detail", info="show the additional visualization results", value=True)
+                    show_detail = gr.Checkbox(label="Show Detail", info="show the additional visualization results", value=False)
 
             with gr.Column():
 
@@ -148,7 +178,7 @@ if __name__ == "__main__":
                         attn_map = gr.Image(show_label=False, show_download_button=False)
                     with gr.Tab(label="Segmentation Maps"):
                         gr.Markdown("### Character-level segmentation maps (using upscaled attention maps):")
-                        seg_map = gr.AnnotatedImage(height=384, show_label=False, show_download_button=False)
+                        seg_map = gr.AnnotatedImage(height=384, show_label=False)
 
         # examples
         examples = []

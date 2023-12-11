@@ -1,8 +1,8 @@
 type: "demo"
 
 # path
-load_ckpt_path: "./checkpoints/st-step=100000+la-step=100000-v1.ckpt"  #512-inpainting-ema.ckpt
-model_cfg_path: "./configs/test/textdesign_sd_2.yaml"  #sd_2_inpainting.yaml
+load_ckpt_path: "./checkpoints/{your checkpoint path}.ckpt"
+model_cfg_path: "./configs/test/textdesign_sd_2.yaml"
 
 # param
 H: 512
@@ -12,18 +12,15 @@ batch_size: 1
 
 channel: 4 # AE latent channel
 factor: 8 # AE downsample factor
-scale: [4.0, 0.0] # content scale, style scale
+scale: [4.0, 0.0] # cfg scale, None
 noise_iters: 10
 force_uc_zero_embeddings: ["ref", "label"]
 aae_enabled: False
-detailed: True
-dual_conditioner: False
-
+detailed: False
 
 # runtime
 steps: 50
 init_step: 0
 num_workers: 0
-gpu: 4
-max_iter: 100
+gpu: 0
 

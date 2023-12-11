@@ -1,30 +1,30 @@
 type: "test"
 
 # path
-load_ckpt_path: "./checkpoints/***.ckpt"
+load_ckpt_path: "./checkpoints/{your checkpoint path}.ckpt"
 model_cfg_path: "./configs/test/textdesign_sd_2.yaml"
-dataset_cfg_path: "./configs/dataset/locr.yaml"
+dataset_cfg_path: "./configs/dataset/icd13.yaml"
 output_dir: "./outputs"
+temp_dir: "./temp"
 
 # param
 channel: 4 # AE latent channel
 factor: 8 # AE downsample factor
-scale: [4.0, 0.0] # content scale, style scale
-noise_iters: 10
+scale: [5.0, 0.0] # cfg scale, None
+noise_iters: 10 # iterations for initial noise searching
 force_uc_zero_embeddings: ["ref", "label"]
-aae_enabled: False
-detailed: False
-dual_conditioner: False
+aae_enabled: False # attend and excite
+detailed: False # save visualization results
 
 # runtime
-steps: 100
+steps: 50 # sampling steps
 init_step: 0
 batch_size: 1
 num_workers: 0
-gpu: 1
+gpu: 0 # index of your gpu device
 max_iter: 100
 shuffle: True
-quan_test: True
+quan_test: False # quantitative test
 
 # ocr
 ocr_enabled: True

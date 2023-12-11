@@ -1,6 +1,6 @@
 ## UDiffText: A Unified Framework for High-quality Text Synthesis in Arbitrary Images via Character-aware Diffusion Models
 
-<a href='https://arxiv.org/pdf/******'><img src='https://img.shields.io/badge/Arxiv-******-DF826C'></a> 
+<a href='https://arxiv.org/abs/2312.04884'><img src='https://img.shields.io/badge/Arxiv-2312.04884-DF826C'></a> 
 <a href='https://udifftext.github.io/'><img src='https://img.shields.io/badge/Project-UDiffText-D0F288'></a> 
 <a href='https://huggingface.co/spaces/ZYMPKU/UDiffText'><img src='https://img.shields.io/badge/%F0%9F%A4%97%20Demo-UDiffText-8ADAB2'></a> 
 
@@ -10,9 +10,10 @@
 
 ### 📬 News
 
-**2023.12.3** Build demo
-**2023.12.1** Build project page
-**2023.11.30** Upload version 1.0
+- **2023.12.11** Version 2.0 update (getting rid of trash codes🚮)
+- **2023.12.3** Build Hugging Face demo
+- **2023.12.1** Build Github project page
+- **2023.11.30** Version 1.0 upload
 
 ### 🔨 Installation
 

@@ -9,7 +9,7 @@ dataset_cfg_path: ./configs/dataset/locr.yaml
 # param
 save_ckpt_freq: 1
 num_workers: 0
-batch_size: 8
+batch_size: 16
 base_learning_rate: 5.0e-5
 shuffle: False
 

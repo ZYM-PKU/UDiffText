@@ -27,40 +27,22 @@ def init_sampling(cfgs):
         "target": "sgm.modules.diffusionmodules.discretizer.LegacyDDPMDiscretization",
     }
 
-    if cfgs.dual_conditioner:
-        guider_config = {
-            "target": "sgm.modules.diffusionmodules.guiders.DualCFG",
-            "params": {"scale": cfgs.scale},
-        }
+    guider_config = {
+        "target": "sgm.modules.diffusionmodules.guiders.VanillaCFG",
+        "params": {"scale": cfgs.scale[0]},
+    }
 
-        sampler = EulerEDMDualSampler(
-            num_steps=cfgs.steps,
-            discretization_config=discretization_config,
-            guider_config=guider_config,
-            s_churn=0.0,
-            s_tmin=0.0,
-            s_tmax=999.0,
-            s_noise=1.0,
-            verbose=True,
-            device=torch.device("cuda", index=cfgs.gpu)
-        )
-    else:
-        guider_config = {
-            "target": "sgm.modules.diffusionmodules.guiders.VanillaCFG",
-            "params": {"scale": cfgs.scale[0]},
-        }
-
-        sampler = EulerEDMSampler(
-            num_steps=cfgs.steps,
-            discretization_config=discretization_config,
-            guider_config=guider_config,
-            s_churn=0.0,
-            s_tmin=0.0,
-            s_tmax=999.0,
-            s_noise=1.0,
-            verbose=True,
-            device=torch.device("cuda", index=cfgs.gpu)
-        )
+    sampler = EulerEDMSampler(
+        num_steps=cfgs.steps,
+        discretization_config=discretization_config,
+        guider_config=guider_config,
+        s_churn=0.0,
+        s_tmin=0.0,
+        s_tmax=999.0,
+        s_noise=1.0,
+        verbose=True,
+        device=torch.device("cuda", index=cfgs.gpu)
+    )
 
     return sampler
 
@@ -83,26 +65,14 @@ def prepare_batch(cfgs, batch):
         if isinstance(batch[key], torch.Tensor):
             batch[key] = batch[key].to(torch.device("cuda", index=cfgs.gpu))
 
-    if not cfgs.dual_conditioner:
-        batch_uc = deep_copy(batch)
+    batch_uc = deep_copy(batch)
 
-        if "ntxt" in batch:
-            batch_uc["txt"] = batch["ntxt"]
-        else:
-            batch_uc["txt"] = ["" for _ in range(len(batch["txt"]))]
-
-        if "label" in batch:
-            batch_uc["label"] = ["" for _ in range(len(batch["label"]))]
-
-        return batch, batch_uc, None
-    
+    if "ntxt" in batch:
+        batch_uc["txt"] = batch["ntxt"]
     else:
-        batch_uc_1 = deep_copy(batch)
-        batch_uc_2 = deep_copy(batch)
+        batch_uc["txt"] = ["" for _ in range(len(batch["txt"]))]
 
-        batch_uc_1["ref"] = torch.zeros_like(batch["ref"])
-        batch_uc_2["ref"] = torch.zeros_like(batch["ref"])
+    if "label" in batch:
+        batch_uc["label"] = ["" for _ in range(len(batch["label"]))]
 
-        batch_uc_1["label"] = ["" for _ in range(len(batch["label"]))]
-
-        return batch, batch_uc_1, batch_uc_2
+    return batch, batch_uc
