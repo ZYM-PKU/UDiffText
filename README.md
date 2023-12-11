@@ -116,5 +116,12 @@ or try our online demo at [hugging face](https://huggingface.co/spaces/ZYMPKU/UD
 ### 🪬 Citation
 
 ```
-coming soon
+@misc{zhao2023udifftext,
+      title={UDiffText: A Unified Framework for High-quality Text Synthesis in Arbitrary Images via Character-aware Diffusion Models}, 
+      author={Yiming Zhao and Zhouhui Lian},
+      year={2023},
+      eprint={2312.04884},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV}
+}
 ```
