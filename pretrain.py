@@ -1,9 +1,8 @@
-from sgm.util import instantiate_from_config
-from omegaconf import OmegaConf
-
 import torch
 import torch.utils.data as data
 import pytorch_lightning as pl
+from omegaconf import OmegaConf
+from sgm.util import instantiate_from_config
 from pytorch_lightning.callbacks import ModelCheckpoint
 
 

@@ -50,7 +50,7 @@ checkpoints
 
 1. Prepare your data
 
-- Create a data directory **{your data root}** in your disk and put your data in it.
+- Create a data directory **{your data root}** in your disk and put your data in it. Then set the **data_root** field in **./configs/dataset/locr.yaml**.
 - For the downloading and preprocessing of Laion-OCR dataset, please refer to [TextDiffuser](https://github.com/microsoft/unilm/tree/master/textdiffuser) and our **./scripts/preprocess/laion_ocr_pre.ipynb**.
 
 2. Train the character-level encoder
@@ -84,9 +84,9 @@ python train.py
 2. Set the parameters in **./configs/test.yaml**, especially the paths:
 
 ```
-load_ckpt_path: "./checkpoints/***.ckpt"  // Downloaded UDiffText checkpoint
+load_ckpt_path: "./checkpoints/***.ckpt"  // UDiffText checkpoint
 model_cfg_path: "./configs/test/textdesign_sd_2.yaml"  // UDiffText model config
-dataset_cfg_path: "./configs/dataset/locr.yaml"  // Use the Laion-OCR dataset
+dataset_cfg_path: "./configs/dataset/locr.yaml"  // LAION-OCR dataset config
 ```
 
 and run:
@@ -103,7 +103,7 @@ In order to run an interactive demo on your own mechine, execute the code:
 python demo.py
 ```
 
-, or try our online demo at [hugging face](https://huggingface.co/spaces/ZYMPKU/UDiffText):
+or try our online demo at [hugging face](https://huggingface.co/spaces/ZYMPKU/UDiffText):
 
 ![Demo](demo/demo.png)
 
