@@ -79,7 +79,7 @@ python train.py
 
 ### 📏 Evaluation
 
-1. Download our available [checkpoints]() and put them in the corresponding directories in **./checkpoints**.
+1. Download our available [checkpoints](https://drive.google.com/drive/folders/1s8IWqqydaJBjukxViGKFj2N33lfoVkGf?usp=sharing) and put them in the corresponding directories in **./checkpoints**.
 
 2. Set the parameters in **./configs/test.yaml**, especially the paths:
 
