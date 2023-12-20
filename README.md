@@ -97,7 +97,7 @@ python test.py
 
 ### 🖼️ Demo
 
-In order to run an interactive demo on your own mechine, execute the code:
+In order to run an interactive demo on your own machine, execute the code:
 
 ```
 python demo.py
