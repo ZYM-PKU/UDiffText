@@ -284,3 +284,4 @@ class FullLoss(StandardDiffusionLoss):
         loss = loss / count
 
         return loss
+    
