@@ -63,6 +63,8 @@ python pretrain.py
 
 3. Train the UDiffText model
 
+Download the [pretrained model](https://huggingface.co/stabilityai/stable-diffusion-2-inpainting/blob/main/512-inpainting-ema.ckpt) and put it in **./checkpoints/pretrained/**.
+
 Set the parameters in **./configs/train.yaml**, especially the paths:
 
 ```
