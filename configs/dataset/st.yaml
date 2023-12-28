@@ -10,4 +10,4 @@ params:
   seg_min_ratio: 0.001
 
   length: 100000
-  use_cached: True
+  use_cached: False

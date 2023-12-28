@@ -12,5 +12,5 @@ params:
   aug_text_enabled: True
   aug_text_ratio: 1.0
 
-  use_cached: True
+  use_cached: False
   length: 100000

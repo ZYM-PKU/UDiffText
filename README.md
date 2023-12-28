@@ -56,30 +56,61 @@ checkpoints
 
 #### ICDAR13
 - Create a data directory **{your data root}/ICDAR13** in your disk and put your data in it. Then set the **data_root** field in **./configs/dataset/icd13.yaml**.
-- Build tree structure as below:
+- Build the tree structure as below:
 ```
 ICDAR13
 ├── train                  // training set
     ├── annos              // annotations
-        ├── gt_100.txt
+        ├── gt_x.txt
         ├── ...
     └── images             // images
-        ├── img_100.jpg
+        ├── img_x.jpg
         ├── ...
 └── val                    // validation set
     ├── annos              // annotations
-        ├── gt_img_1.txt
+        ├── gt_img_x.txt
         ├── ...
     └── images             // images
-        ├── img_1.jpg
+        ├── img_x.jpg
+        ├── ...
+```
+
+#### TextSeg
+- Create a data directory **{your data root}/TextSeg** in your disk and put your data in it. Then set the **data_root** field in **./configs/dataset/tsg.yaml**.
+- Build the tree structure as below:
+```
+TextSeg
+├── train                  // training set
+    ├── annotation         // annotations
+        ├── x_anno.json    // annotation json file
+        ├── x_mask.png     // character-level mask
+        ├── ...
+    └── image              // images
+        ├── x.jpg.jpg
+        ├── ...
+└── val                    // validation set
+    ├── annotation         // annotations
+        ├── x_anno.json    // annotation json file
+        ├── x_mask.png     // character-level mask
+        ├── ...
+    └── image              // images
+        ├── x.jpg
         ├── ...
 ```
 
 #### SynthText
 - Create a data directory **{your data root}/SynthText** in your disk and put your data in it. Then set the **data_root** field in **./configs/dataset/st.yaml**.
-
-#### TextSeg
-- Create a data directory **{your data root}/TextSeg** in your disk and put your data in it. Then set the **data_root** field in **./configs/dataset/tsg.yaml**.
+- Build the tree structure as below:
+```
+SynthText
+├── 1                      // part 1
+    ├── ant+hill_1_0.jpg   // image
+    ├── ant+hill_1_1.jpg
+    ├── ...
+├── 2                      // part 2
+├── ...
+└── gt.mat                 // annotation file
+```
 
 2. Train the character-level encoder
 
