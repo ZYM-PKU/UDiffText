@@ -1,7 +1,7 @@
 target: LAIONOCRDataset
 params:
 
-  data_root: '{your data root}'
+  data_root: '{your data root}/LAION-OCR'
 
   H: 512
   W: 512

@@ -1,7 +1,7 @@
 target: ICDAR13Dataset
 params:
 
-  data_root: '{your data root}'
+  data_root: '{your data root}/ICDAR13'
 
   H: 512
   W: 512

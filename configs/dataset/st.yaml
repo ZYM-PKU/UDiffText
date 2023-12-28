@@ -1,7 +1,7 @@
 target: SynthTextDataset
 params:
 
-  data_root: '{your data root}'
+  data_root: '{your data root}/SynthText'
 
   H: 512
   W: 512

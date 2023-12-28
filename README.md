@@ -50,8 +50,36 @@ checkpoints
 
 1. Prepare your data
 
-- Create a data directory **{your data root}** in your disk and put your data in it. Then set the **data_root** field in **./configs/dataset/locr.yaml**.
+#### LAION-OCR
+- Create a data directory **{your data root}/LAION-OCR** in your disk and put your data in it. Then set the **data_root** field in **./configs/dataset/locr.yaml**.
 - For the downloading and preprocessing of Laion-OCR dataset, please refer to [TextDiffuser](https://github.com/microsoft/unilm/tree/master/textdiffuser) and our **./scripts/preprocess/laion_ocr_pre.ipynb**.
+
+#### ICDAR13
+- Create a data directory **{your data root}/ICDAR13** in your disk and put your data in it. Then set the **data_root** field in **./configs/dataset/icd13.yaml**.
+- Build tree structure as below:
+```
+ICDAR13
+├── train                  // training set
+    ├── annos              // annotations
+        ├── gt_100.txt
+        ├── ...
+    └── images             // images
+        ├── img_100.jpg
+        ├── ...
+└── val                    // validation set
+    ├── annos              // annotations
+        ├── gt_img_1.txt
+        ├── ...
+    └── images             // images
+        ├── img_1.jpg
+        ├── ...
+```
+
+#### SynthText
+- Create a data directory **{your data root}/SynthText** in your disk and put your data in it. Then set the **data_root** field in **./configs/dataset/st.yaml**.
+
+#### TextSeg
+- Create a data directory **{your data root}/TextSeg** in your disk and put your data in it. Then set the **data_root** field in **./configs/dataset/tsg.yaml**.
 
 2. Train the character-level encoder
 
