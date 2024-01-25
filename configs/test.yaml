@@ -12,7 +12,7 @@ channel: 4 # AE latent channel
 factor: 8 # AE downsample factor
 scale: [5.0, 0.0] # cfg scale, None
 noise_iters: 10 # iterations for initial noise searching
-force_uc_zero_embeddings: ["ref", "label"]
+force_uc_zero_embeddings: ["label"] # condition label
 aae_enabled: False # attend and excite
 detailed: False # save visualization results
 
