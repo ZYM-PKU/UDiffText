@@ -122,7 +122,7 @@ python pretrain.py
 
 3. Train the UDiffText model
 
-Download the [pretrained model](https://huggingface.co/stabilityai/stable-diffusion-2-inpainting/blob/main/512-inpainting-ema.ckpt) and put it in **./checkpoints/pretrained/**. Run **preprocess.ipynb** to rename some parameter keys in the original checkpoint.
+Download the [pretrained model](https://huggingface.co/stabilityai/stable-diffusion-2-inpainting/blob/main/512-inpainting-ema.ckpt) and put it in **./checkpoints/pretrained/**. You can ignore the "Missing Key" or "Unexcepted Key" warning when loading the checkpoint.
 
 Set the parameters in **./configs/train.yaml**, especially the paths:
 

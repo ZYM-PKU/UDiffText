@@ -3,6 +3,7 @@ model:
   params:
     opt_keys:
       - t_attn
+      - t_norm
     input_key: image
     scale_factor: 0.18215
     disable_first_stage_autocast: True
