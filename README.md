@@ -28,6 +28,7 @@ cd UDiffText
 ```
 conda create -n udiff python=3.11
 conda activate udiff
+pip install torch==2.1.1 torchvision==0.16.1 --index-url https://download.pytorch.org/whl/cu121
 pip install -r requirements.txt
 ```
 

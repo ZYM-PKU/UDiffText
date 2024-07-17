@@ -6,6 +6,7 @@ img2dataset==1.42.0
 kornia==0.6.9
 lpips==0.1.4
 matplotlib==3.7.2
+nltk==3.8.1
 numpy==1.25.1
 omegaconf==2.3.0
 open-clip-torch==2.20.0
@@ -21,8 +22,6 @@ socksio==1.0.0
 tensorboard==2.14.0
 timm==0.9.2
 tokenizers==0.13.3
-torch==2.1.0
-torchvision==0.16.0
 tqdm==4.65.0
 transformers==4.30.2
 xformers==0.0.22.post7
