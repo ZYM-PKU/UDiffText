@@ -10,6 +10,7 @@
 
 ### 📬 News
 
+- **2023.7.16** Our paper is accepted by ECCV2024!🥳
 - **2023.12.11** Version 2.0 update (getting rid of trash codes🚮)
 - **2023.12.3** Build Hugging Face demo
 - **2023.12.1** Build Github project page
