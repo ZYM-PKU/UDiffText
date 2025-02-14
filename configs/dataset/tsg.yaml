@@ -1,7 +1,7 @@
 target: TextSegDataset
 params:
 
-  data_root: '{your data root}/TextSeg'
+  data_root: '{your data root}'
 
   H: 512
   W: 512
